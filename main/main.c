@@ -55,12 +55,6 @@ static const sh8601_lcd_init_cmd_t disp_init_cmd[] = {
     {0x51, (uint8_t[]){0xA0}, 1, 0}, // Brightness
 };
 
-// Tie LVGL tick to FreeRTOS tick interrupt (MUST be configured to 1000Hz)
-void vApplicationTickHook(void)
-{
-    lv_tick_inc(1);
-}
-
 // Flush bitmap data in framebuffer to display
 static void lvgl_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
 {
@@ -70,11 +64,16 @@ static void lvgl_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_ma
 }
 
 // Async callback on flush completion, placed in D/IRAM
-static IRAM_ATTR bool lvgl_flush_ready_cb(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
+static bool IRAM_ATTR lvgl_flush_ready_cb(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
 {
     lv_display_t *disp = (lv_display_t *)user_ctx;
     lv_display_flush_ready(disp);
     return false;
+}
+
+static void IRAM_ATTR lvgl_timer_handler(void *args)
+{
+    lv_tick_inc(1);
 }
 
 // Task to call LVGL timer handler regularly
@@ -153,6 +152,14 @@ void app_main(void)
     ESP_LOGI(TAG, "LVGL Init");
     lv_init();
 
+    ESP_LOGI(TAG, "LVGL Timer Init");
+    const esp_timer_create_args_t lvgl_timer_args = {
+        .callback = &lvgl_timer_handler,
+        .name = "lvgl_timer"};
+    esp_timer_handle_t lvgl_timer = NULL;
+    ESP_ERROR_CHECK(esp_timer_create(&lvgl_timer_args, &lvgl_timer));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_timer, 1000));
+
     ESP_LOGI(TAG, "SPI Bus Init");
     const spi_bus_config_t disp_spi_cfg = SH8601_PANEL_BUS_QSPI_CONFIG(DISP_PIN_CLK,
                                                                        DISP_PIN_DATA_0,
@@ -218,5 +225,5 @@ void app_main(void)
 
     ESP_LOGI(TAG, "Booting Tasks");
     xTaskCreatePinnedToCore(lvgl_task, "LVGL Task", 6144, NULL, 2, NULL, 0);
-    xTaskCreatePinnedToCore(stats, "Stats", 3072, NULL, 1, NULL, 0);
+    xTaskCreatePinnedToCore(stats, "Stats", 3072, NULL, 1, NULL, 1);
 }
