@@ -217,6 +217,6 @@ void app_main(void)
     lv_obj_set_scrollbar_mode(lv_scr_act(), LV_SCROLLBAR_MODE_OFF); // Disable automatic scrollbar
 
     ESP_LOGI(TAG, "Booting Tasks");
-    xTaskCreatePinnedToCore(lvgl_task, "LVGL Task", 6144, NULL, 2, NULL, 1);
+    xTaskCreatePinnedToCore(lvgl_task, "LVGL Task", 6144, NULL, 2, NULL, 0);
     xTaskCreatePinnedToCore(stats, "Stats", 3072, NULL, 1, NULL, 0);
 }
