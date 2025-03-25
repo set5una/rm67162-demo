@@ -4,7 +4,7 @@
  * Opts: --bpp 1 --size 32 --font DINMittelschriftStd.ttf --symbols ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890<>(){}[]:;,.'"!@#$%^&*  --format lvgl -o signalis_32px.c
  ******************************************************************************/
 
-#include "signalis_32px.h"
+#include "fonts.h"
 #include "lvgl.h"
 
 #ifndef SIGNALIS_32PX

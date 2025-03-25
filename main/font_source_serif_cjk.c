@@ -4,7 +4,7 @@
  * Opts: --bpp 1 --size 48 --font SourceHanSerifTC-VF.ttf --symbols 零 --format lvgl -o source_serif_cjk.c
  ******************************************************************************/
 
-#include "source_serif_cjk.h"
+#include "fonts.h"
 #include "lvgl.h"
 
 #ifndef SOURCE_SERIF_CJK

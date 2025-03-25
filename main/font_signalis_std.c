@@ -4,7 +4,7 @@
  * Opts: --bpp 1 --size 44 --font DINMittelschriftStd.ttf --symbols ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890<>(){}[]:;,.'"!@#$%^&*  --format lvgl -o signalis_std.c
  ******************************************************************************/
 
-#include "signalis_std.h"
+#include "fonts.h"
 #include "lvgl.h"
 
 #ifndef SIGNALIS_STD

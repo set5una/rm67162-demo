@@ -17,11 +17,7 @@
 #include "lvgl.h"
 
 // Fonts
-#include "source_serif_cjk.c"
-#include "signalis_std.h"
-#include "signalis_32px.h"
-
-#include "stats.h"
+#include "fonts.h"
 
 static const char *TAG = "main"; // Tag for ESP Logging API
 
@@ -42,6 +38,7 @@ static const char *TAG = "main"; // Tag for ESP Logging API
 #define DISP_RES_H 536
 #define DISP_RES_V 240
 #define DISP_BIT_PER_PX 24 // RGB888
+#define FRAMEBUFFER_H 20
 
 // RM67162/SH8601 Init Sequence
 static const sh8601_lcd_init_cmd_t disp_init_cmd[] = {
@@ -202,20 +199,15 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
 
-    // Framebuffer allocation, dual buffer mode with 536*20px per buffer. Only internal SRAM is DMA capable.
-    ESP_LOGI(TAG, "Free fb before alloc: %d Bytes", heap_caps_get_free_size(MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL));
-    size_t fb_size = DISP_RES_H * 20 * sizeof(lv_color_t);
-    static lv_color_t *fb0 = NULL;
-    static lv_color_t *fb1 = NULL;
-    fb0 = heap_caps_malloc(fb_size, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-    fb1 = heap_caps_malloc(fb_size, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-    ESP_LOGI(TAG, "Free fb after alloc: %d Bytes", heap_caps_get_free_size(MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL));
-    assert(fb0 && fb1);
+    // Framebuffer allocation, dual buffer mode
+    size_t fb_size = DISP_RES_H * FRAMEBUFFER_H * sizeof(lv_color_t);
+    DMA_ATTR static lv_color_t fb0[DISP_RES_H * FRAMEBUFFER_H];
+    DMA_ATTR static lv_color_t fb1[DISP_RES_H * FRAMEBUFFER_H];
 
     // Setup LVGL display
     lv_display_set_user_data(disp, panel_handle);
     lv_display_set_flush_cb(disp, lvgl_flush);
-    lv_display_set_buffers(disp, fb0, fb1, fb_size, LV_DISPLAY_RENDER_MODE_PARTIAL);
+    lv_display_set_buffers(disp, &fb0, &fb1, fb_size, LV_DISPLAY_RENDER_MODE_PARTIAL);
 
     // Draw the text and scanlines
     draw_text();
@@ -223,7 +215,6 @@ void app_main(void)
     create_scanline(3000);                                          // Create 2 scan lines 120px (1/2 screen) apart
     lv_obj_set_scrollbar_mode(lv_scr_act(), LV_SCROLLBAR_MODE_OFF); // Disable automatic scrollbar
 
-    ESP_LOGI(TAG, "Booting Tasks");
+    ESP_LOGI(TAG, "Booting LVGL Task");
     xTaskCreatePinnedToCore(lvgl_task, "LVGL Task", 6144, NULL, 2, NULL, 0);
-    xTaskCreatePinnedToCore(stats, "Stats", 3072, NULL, 1, NULL, 1);
 }
